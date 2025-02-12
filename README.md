@@ -1,28 +1,31 @@
-# Timetracker React Extension
+# Timetracker React Chrome Extension
 
 ## Overview
 
-The Timetracker React Extension is a Chrome extension that allows users to create Timetracker tasks directly from Jira issues using a React-based UI. The extension integrates with the Timetracker API to manage tasks and log time efficiently.
+A Chrome extension built with React that enables seamless integration between Jira and Timetracker. This extension allows users to create Timetracker tasks directly from Jira issues and log time against them through a modern React-based interface.
 
-### Key Features
+## Features
 
-- Create Timetracker tasks from Jira issues.
-- Log time for tasks using a React-based modal.
-- Dynamic imports for optimized bundle sizes.
-- Uses Webpack for bundling and Babel for transpiling.
+- One-click task creation from Jira issues
+- Integrated time logging with date/time selection
+- Project selection and task management
+- Auto-detection of existing tasks
+- Toast notifications for user feedback
+- Secure authentication with Timetracker API
+- Real-time validation and error handling
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm (v6 or higher)
+- Google Chrome browser
+- Access to Jira and Timetracker systems
 
 ## Installation
 
-### Prerequisites
-
-- Node.js and npm installed on your machine.
-- Chrome browser.
-
-### Steps
-
 1. **Clone the repository:**
     ```sh
-    git clone https://github.com/KokserM/timetracker-react-ext.git
+    git clone https://github.com/KokserM/timetracker-task-creator-react.git
     cd timetracker-react-ext
     ```
 
@@ -37,15 +40,20 @@ The Timetracker React Extension is a Chrome extension that allows users to creat
     ```
 
 4. **Load the extension in Chrome:**
-    - Open Chrome and navigate to `chrome://extensions/`.
-    - Enable "Developer mode" using the toggle in the top right.
-    - Click "Load unpacked" and select the `dist` directory from the project.
+    - Copy manifest.json, images directory and icons directory to dist directory
+    - Navigate to chrome://extensions/
+    - Enable "Developer mode"
+    - Click "Load unpacked"
+    - Select the dist directory
 
 ## Usage
 
-1. Navigate to a Jira issue page that matches the URL pattern specified in the `manifest.json`.
-2. The "Create Timetracker Task" button should appear in the Jira toolbar.
-3. Click the button to open the React modal and create a task or log time.
+1. Navigate to any Jira issue page (domain: smjira.sm.ee)
+2. Look for the "Create Timetracker Task" button in the toolbar
+3. Click to open the task creation modal
+4. Select project and enter time details
+5. Create task and/or log time
+6. Check notifications for operation status
 
 ### Key Files
 
@@ -56,5 +64,5 @@ The Timetracker React Extension is a Chrome extension that allows users to creat
 - `webpack.config.js`: Webpack configuration file.
 - `manifest.json`: Chrome extension manifest file.
 
-## Configuration
+
 
