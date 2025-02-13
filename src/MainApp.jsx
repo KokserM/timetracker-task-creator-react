@@ -13,7 +13,6 @@ function MainApp({ issueKey, issueSummary, showTimeLog, setShowTimeLog, cachedUs
         setShowTimeLog(false);
     }
 
-
     return (
         <>
             {showTimeLog && (

@@ -1,12 +1,24 @@
 // src/background.js
 
+// Use the correct API: in Firefox, "browser" is defined and returns promises;
+// in Chrome (or as a fallback) use "chrome". We assign it to extBrowser.
+const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
+
 const TIMETRACKER_BASE_URL = 'https://timetracker.iglu.ee/api';
 const TIMETRACKER_LOGIN_URL = `${TIMETRACKER_BASE_URL}/login`;
 const TIMETRACKER_TASKS_URL = `${TIMETRACKER_BASE_URL}/tasks`;
 
 /**
- * Logs in with given username/password – returns x-auth-token
- * and stores it in chrome.storage.local.
+ * Helper to safely extract an error message.
+ */
+function getErrorMessage(err) {
+    if (err instanceof Error) return err.message;
+    return String(err);
+}
+
+/**
+ * Logs in with the provided username and password.
+ * Always throws an Error object on failure.
  */
 async function loginToTimetracker(username, password) {
     console.log('loginToTimetracker: Attempting login for', username);
@@ -27,19 +39,21 @@ async function loginToTimetracker(username, password) {
         throw new Error('No x-Auth-Token found in response headers.');
     }
 
-    await chrome.storage.local.set({ timetrackerAuthToken: token });
+    await extBrowser.storage.local.set({ timetrackerAuthToken: token });
     console.log('loginToTimetracker: Received token:', token);
     return token;
 }
 
 /**
- * Uses the stored token to get the current user.
+ * Retrieves the current user using the stored token.
  */
 async function getCurrentUser() {
-    const { timetrackerAuthToken } = await chrome.storage.local.get('timetrackerAuthToken');
+    const result = await extBrowser.storage.local.get('timetrackerAuthToken');
+    const timetrackerAuthToken = result.timetrackerAuthToken;
     if (!timetrackerAuthToken) {
         throw new Error('NO_TOKEN');
     }
+
     const response = await fetch(`${TIMETRACKER_BASE_URL}/users/current`, {
         method: 'GET',
         headers: {
@@ -61,10 +75,11 @@ async function getCurrentUser() {
 }
 
 /**
- * Uses the stored token to get projects for the given user id.
+ * Retrieves projects for the given user ID.
  */
 async function getProjectsForUser(personId) {
-    const { timetrackerAuthToken } = await chrome.storage.local.get('timetrackerAuthToken');
+    const result = await extBrowser.storage.local.get('timetrackerAuthToken');
+    const timetrackerAuthToken = result.timetrackerAuthToken;
     if (!timetrackerAuthToken) {
         throw new Error('NO_TOKEN');
     }
@@ -92,7 +107,7 @@ async function getProjectsForUser(personId) {
 }
 
 /**
- * Return user + all active projects for that user.
+ * Returns an object with the current user and their projects.
  */
 async function getProjects() {
     const user = await getCurrentUser();
@@ -101,11 +116,11 @@ async function getProjects() {
 }
 
 /**
- * Create a new Timetracker task.
- * (The response may be partial.)
+ * Creates a new Timetracker task.
  */
 async function doCreateTask(issueKey, issueSummary, project) {
-    const { timetrackerAuthToken } = await chrome.storage.local.get('timetrackerAuthToken');
+    const result = await extBrowser.storage.local.get('timetrackerAuthToken');
+    const timetrackerAuthToken = result.timetrackerAuthToken;
     if (!timetrackerAuthToken) {
         throw new Error('NO_TOKEN');
     }
@@ -155,11 +170,11 @@ async function doCreateTask(issueKey, issueSummary, project) {
 }
 
 /**
- * Find a Timetracker task by name for the given user.
- * Returns an array with FULL task objects.
+ * Finds a Timetracker task by name for a given user.
  */
 async function findTaskByName(taskName, personId) {
-    const { timetrackerAuthToken } = await chrome.storage.local.get('timetrackerAuthToken');
+    const result = await extBrowser.storage.local.get('timetrackerAuthToken');
+    const timetrackerAuthToken = result.timetrackerAuthToken;
     if (!timetrackerAuthToken) {
         throw new Error('NO_TOKEN');
     }
@@ -177,14 +192,17 @@ async function findTaskByName(taskName, personId) {
     if (response.status === 401) {
         throw new Error('TOKEN_INVALID');
     }
-    const result = await response.json();
-    console.log('findTaskByName: result =', result);
-    return result;
+    if (!response.ok) {
+        throw new Error('Failed to find task by name');
+    }
+
+    const resultData = await response.json();
+    console.log('findTaskByName: result =', resultData);
+    return resultData;
 }
 
 /**
- * Build roles dynamically into objects with bitMask values.
- * ...
+ * Builds an array of roles from a roles array.
  */
 function buildRoles(rolesArray) {
     let bitMask = "01";
@@ -202,10 +220,11 @@ function buildRoles(rolesArray) {
 }
 
 /**
- * Create a worklog entry using a FULL task object.
+ * Creates a worklog entry.
  */
 async function createWorklog(taskFromContent, startTime, endTime, comment, userFromContent) {
-    const { timetrackerAuthToken } = await chrome.storage.local.get('timetrackerAuthToken');
+    const result = await extBrowser.storage.local.get('timetrackerAuthToken');
+    const timetrackerAuthToken = result.timetrackerAuthToken;
     if (!timetrackerAuthToken) {
         throw new Error('NO_TOKEN');
     }
@@ -270,21 +289,18 @@ async function createWorklog(taskFromContent, startTime, endTime, comment, userF
     }
 
     const responseText = await response.text();
-    let data;
+    let data = {};
     try {
         data = responseText ? JSON.parse(responseText) : {};
     } catch (e) {
-        console.error('createWorklog: Failed to parse JSON:', e);
-        data = {};
+        console.error('createWorklog: JSON parse error:', e);
     }
     console.log('createWorklog: success response:', data);
     return data;
 }
 
-/**
- * Listen for messages from the content script.
- */
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+// Listen for messages from content scripts or the UI.
+extBrowser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('background.js - onMessage:', request);
 
     if (request.action === 'GET_PROJECTS_AND_USER') {
@@ -293,12 +309,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true, user, projects });
                 console.log('GET_PROJECTS_AND_USER success:', user, projects);
             })
-            .catch(err => {
-                console.error('GET_PROJECTS_AND_USER error:', err.message);
-                if (err.message === 'NO_TOKEN' || err.message === 'TOKEN_INVALID') {
+            .catch((err) => {
+                console.error('GET_PROJECTS_AND_USER error:', err);
+                const msg = getErrorMessage(err);
+                if (msg === 'NO_TOKEN' || msg === 'TOKEN_INVALID') {
                     sendResponse({ success: false, needCredentials: true });
                 } else {
-                    sendResponse({ success: false, error: err.message });
+                    sendResponse({ success: false, error: msg });
                 }
             });
         return true;
@@ -308,10 +325,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const { username, password } = request.payload;
         loginToTimetracker(username, password)
             .then(() => getProjects())
-            .then(({ user, projects }) => sendResponse({ success: true, user, projects }))
-            .catch(err => {
-                console.error('LOGIN error:', err.message);
-                sendResponse({ success: false, error: err.message });
+            .then(({ user, projects }) => {
+                sendResponse({ success: true, user, projects });
+            })
+            .catch((err) => {
+                console.error('LOGIN error:', err);
+                const msg = getErrorMessage(err);
+                sendResponse({ success: false, error: msg });
             });
         return true;
     }
@@ -319,13 +339,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'FIND_TASK_BY_NAME') {
         const { taskName, personId } = request.payload;
         findTaskByName(taskName, personId)
-            .then(result => sendResponse({ success: true, data: result }))
-            .catch(err => {
-                console.error('FIND_TASK_BY_NAME error:', err.message);
-                if (err.message === 'NO_TOKEN' || err.message === 'TOKEN_INVALID') {
+            .then((result) => sendResponse({ success: true, data: result }))
+            .catch((err) => {
+                console.error('FIND_TASK_BY_NAME error:', err);
+                const msg = getErrorMessage(err);
+                if (msg === 'NO_TOKEN' || msg === 'TOKEN_INVALID') {
                     sendResponse({ success: false, needCredentials: true });
                 } else {
-                    sendResponse({ success: false, error: err.message });
+                    sendResponse({ success: false, error: msg });
                 }
             });
         return true;
@@ -334,13 +355,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'CREATE_TIMETRACKER_TASK') {
         const { issueKey, issueSummary, project } = request.payload;
         doCreateTask(issueKey, issueSummary, project)
-            .then(partialTask => sendResponse({ success: true, data: partialTask }))
-            .catch(err => {
-                console.error('CREATE_TIMETRACKER_TASK error:', err.message);
-                if (err.message === 'NO_TOKEN' || err.message === 'TOKEN_INVALID') {
+            .then((partialTask) => {
+                sendResponse({ success: true, data: partialTask });
+            })
+            .catch((err) => {
+                console.error('CREATE_TIMETRACKER_TASK error:', err);
+                const msg = getErrorMessage(err);
+                if (msg === 'NO_TOKEN' || msg === 'TOKEN_INVALID') {
                     sendResponse({ success: false, needCredentials: true });
                 } else {
-                    sendResponse({ success: false, error: err.message });
+                    sendResponse({ success: false, error: msg });
                 }
             });
         return true;
@@ -349,13 +373,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'CREATE_WORKLOG') {
         const { task, startTime, endTime, comment, person } = request.payload;
         createWorklog(task, startTime, endTime, comment, person)
-            .then(result => sendResponse({ success: true, data: result }))
-            .catch(err => {
-                console.error('CREATE_WORKLOG error:', err.message);
-                if (err.message === 'NO_TOKEN' || err.message === 'TOKEN_INVALID') {
+            .then((result) => {
+                sendResponse({ success: true, data: result });
+            })
+            .catch((err) => {
+                console.error('CREATE_WORKLOG error:', err);
+                const msg = getErrorMessage(err);
+                if (msg === 'NO_TOKEN' || msg === 'TOKEN_INVALID') {
                     sendResponse({ success: false, needCredentials: true });
                 } else {
-                    sendResponse({ success: false, error: err.message });
+                    sendResponse({ success: false, error: msg });
                 }
             });
         return true;

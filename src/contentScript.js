@@ -3,10 +3,11 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 
+const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
+
 (function() {
     console.log('Timetracker React contentScript loaded');
 
-    // Retrieve the Jira issue key and summary
     const issueKeyElement = document.querySelector('#key-val');
     const issueSummaryElement = document.querySelector('#summary-val');
     if (!issueKeyElement || !issueSummaryElement) {
@@ -16,7 +17,6 @@ import App from './App';
     const issueKey = issueKeyElement.textContent.trim();
     const issueSummary = issueSummaryElement.textContent.trim();
 
-    // Insert our "Create Timetracker Task" button into the Jira toolbar
     const opsbarTransitions = document.querySelector('#opsbar-opsbar-transitions');
     if (!opsbarTransitions) {
         console.log('#opsbar-opsbar-transitions not found.');
@@ -39,16 +39,13 @@ import App from './App';
     });
     opsbarTransitions.appendChild(createTaskButton);
 
-    // Create a container for our React modals/toasts
     const modalContainer = document.createElement('div');
     modalContainer.id = 'timetracker-react-modal-root';
     document.body.appendChild(modalContainer);
 
-    // Render the main App with issueKey/summary as props
     const root = createRoot(modalContainer);
     root.render(<App issueKey={issueKey} issueSummary={issueSummary} />);
 
-    // When the button is clicked, call the global function in App
     createTaskButton.addEventListener('click', (e) => {
         e.preventDefault();
         if (window.showTimetrackerModal) {

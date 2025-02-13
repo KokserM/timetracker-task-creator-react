@@ -1,8 +1,9 @@
+// src/components/LoginModal.jsx
 import React, { useState } from 'react';
-// 1. Import MUI components
-import { TextField, Button, IconButton, Typography } from '@mui/material';
-// For the "close" icon:
+import { TextField, Button, IconButton } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+
+const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
 
 export default function LoginModal({ onClose, onLoginSuccess }) {
     const [username, setUsername] = useState('');
@@ -10,12 +11,18 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
 
     function handleSubmit() {
         if (!username || !password) return;
-        chrome.runtime.sendMessage(
+
+        extBrowser.runtime.sendMessage(
             { action: 'LOGIN', payload: { username, password } },
             (resp) => {
-                if (!resp) return;
+                if (!resp) {
+                    console.error('No response from LOGIN');
+                    return;
+                }
                 if (resp.success) {
                     onLoginSuccess(resp.user, resp.projects);
+                } else {
+                    alert(`Login failed: ${resp.error || 'Unknown error'}`);
                 }
             }
         );
@@ -24,25 +31,18 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     return (
         <div style={styles.overlay}>
             <div style={styles.modal}>
-                {/* Close button (top-right corner) */}
-                <IconButton
-                    sx={styles.closeBtn}
-                    onClick={onClose}
-                    size="small"
-                >
+                <IconButton sx={styles.closeBtn} onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
 
-                {/* Centered header image */}
                 <div style={{ textAlign: 'center' }}>
                     <img
-                        src={chrome.runtime.getURL('images/timetrackerlogo.png')}
+                        src={extBrowser.runtime.getURL('images/timetrackerlogo.png')}
                         alt="Timetracker"
                         style={{ marginBottom: '10px', maxWidth: '200px' }}
                     />
                 </div>
 
-                {/* Username field */}
                 <TextField
                     label="Username (email)"
                     variant="outlined"
@@ -52,7 +52,6 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                     sx={{ marginBottom: '16px' }}
                 />
 
-                {/* Password field */}
                 <TextField
                     label="Password"
                     variant="outlined"
@@ -63,7 +62,6 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                     sx={{ marginBottom: '16px' }}
                 />
 
-                {/* Login button */}
                 <Button
                     variant="contained"
                     onClick={handleSubmit}

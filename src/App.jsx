@@ -1,7 +1,10 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import MainApp from './MainApp';
 import ToastProvider from './components/Toast';
 import LoginModal from './components/LoginModal';
+
+const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
 
 function App(props) {
     const [showTimeLog, setShowTimeLog] = useState(false);
@@ -11,7 +14,7 @@ function App(props) {
 
     useEffect(() => {
         window.showTimetrackerModal = () => {
-            chrome.runtime.sendMessage({ action: 'GET_PROJECTS_AND_USER' }, (resp) => {
+            extBrowser.runtime.sendMessage({ action: 'GET_PROJECTS_AND_USER' }, (resp) => {
                 if (!resp) {
                     console.error('No response from background.');
                     return;

@@ -8,9 +8,11 @@ import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
-
-// 1) Import date-fns "format" so we can produce local time strings
 import { format } from 'date-fns';
+
+// if (typeof browser === 'undefined') {
+//   var browser = chrome;
+// }
 
 export default function TimeLogModal({
                                          onClose,
@@ -35,18 +37,15 @@ export default function TimeLogModal({
     const [comment, setComment] = useState('');
     const [logTime, setLogTime] = useState(true);
 
-    // 2) Store user, projects, and possibly an existing task
     const [user, setUser] = useState(initialUser || null);
     const [projects, setProjects] = useState(initialProjects || []);
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [existingTask, setExistingTask] = useState(null);
 
-    /**
-     * Step 1: Fetch user and projects if missing
-     */
+    // Step 1: fetch user/projects if missing
     useEffect(() => {
         if (!user || projects.length === 0) {
-            chrome.runtime.sendMessage({ action: 'GET_PROJECTS_AND_USER' }, (resp) => {
+            browser.runtime.sendMessage({ action: 'GET_PROJECTS_AND_USER' }, (resp) => {
                 if (resp && resp.success) {
                     setUser(resp.user);
                     setProjects(resp.projects);
@@ -59,14 +58,11 @@ export default function TimeLogModal({
         }
     }, []);
 
-    /**
-     * Step 2: Once we have a user, call FIND_TASK_BY_NAME to see if the task already exists.
-     * If found, store it in existingTask, set the project select accordingly, and disable it.
-     */
+    // Step 2: check if task already exists
     useEffect(() => {
         if (user && issueKey && issueSummary) {
             const taskName = `${issueKey} - ${issueSummary}`;
-            chrome.runtime.sendMessage(
+            browser.runtime.sendMessage(
                 {
                     action: 'FIND_TASK_BY_NAME',
                     payload: { taskName, personId: user.id },
@@ -77,29 +73,21 @@ export default function TimeLogModal({
                         return;
                     }
                     if (resp.success && resp.data && resp.data.length > 0) {
-                        const found = resp.data[0]; // the existing task
+                        const found = resp.data[0];
                         setExistingTask(found);
-                        // Also set selectedProjectId to the project's id from the existing task
                         if (found.project?.id) {
                             setSelectedProjectId(found.project.id);
                         }
-                    } else {
-                        // No existing task found, do nothing special
                     }
                 }
             );
         }
     }, [user, issueKey, issueSummary]);
 
-    /**
-     * handleCreate: Called when the user presses "Create Task / Log Time"
-     */
     function handleCreate() {
-        // 3) Build start/end times as local time strings
         let startVal = '';
         let endVal = '';
 
-        // Validate times only if logging time
         if (logTime) {
             const startDateObj = new Date(dateVal);
             startDateObj.setHours(startTimeVal.getHours(), startTimeVal.getMinutes(), 0, 0);
@@ -111,12 +99,12 @@ export default function TimeLogModal({
                 showToast('Start time must be before end time.', 'error');
                 return;
             }
-            // Format in local time (no trailing "Z") e.g. "2025-02-11T09:00:00"
+            // Local time strings e.g. 2025-02-11T09:00:00
             startVal = format(startDateObj, "yyyy-MM-dd'T'HH:mm:ss");
             endVal = format(endDateObj, "yyyy-MM-dd'T'HH:mm:ss");
         }
 
-        // If an existing task was found, skip creation entirely
+        // If existing task found, skip creation
         if (existingTask) {
             if (logTime) {
                 doCreateWorklog(existingTask, startVal, endVal);
@@ -127,7 +115,6 @@ export default function TimeLogModal({
             return;
         }
 
-        // Otherwise, proceed with normal "create task" logic
         if (!selectedProjectId) {
             showToast('Please select a project.', 'error');
             return;
@@ -144,7 +131,7 @@ export default function TimeLogModal({
         }
 
         const taskName = `${issueKey} - ${issueSummary}`;
-        chrome.runtime.sendMessage(
+        browser.runtime.sendMessage(
             {
                 action: 'CREATE_TIMETRACKER_TASK',
                 payload: { issueKey, issueSummary, project: finalProject },
@@ -161,8 +148,8 @@ export default function TimeLogModal({
                 showToast('Task created successfully!', 'success');
 
                 if (logTime) {
-                    // After creation, we fetch the newly-created full task object so we can log time
-                    chrome.runtime.sendMessage(
+                    // after creation, fetch the newly created full task object
+                    browser.runtime.sendMessage(
                         {
                             action: 'FIND_TASK_BY_NAME',
                             payload: { taskName, personId: user.id },
@@ -186,17 +173,14 @@ export default function TimeLogModal({
         );
     }
 
-    /**
-     * Actually logs the time for the given task.
-     */
     function doCreateWorklog(taskObj, startValLocal, endValLocal) {
-        chrome.runtime.sendMessage(
+        browser.runtime.sendMessage(
             {
                 action: 'CREATE_WORKLOG',
                 payload: {
                     task: taskObj,
-                    startTime: startValLocal, // local time string
-                    endTime: endValLocal, // local time string
+                    startTime: startValLocal,
+                    endTime: endValLocal,
                     comment,
                     person: user,
                 },
@@ -237,7 +221,7 @@ export default function TimeLogModal({
                         value={selectedProjectId}
                         onChange={(evt) => setSelectedProjectId(evt.target.value)}
                         label="Project"
-                        disabled={Boolean(existingTask)} // Disable if a task already exists
+                        disabled={Boolean(existingTask)}
                         MenuProps={{
                             disablePortal: true,
                             PaperProps: {
@@ -328,12 +312,10 @@ export default function TimeLogModal({
 
                 <button style={styles.createBtn} onClick={handleCreate}>
                     {existingTask
-                        ? // If task already exists, button says "Log Time" or "No Time" depending on checkbox
-                        logTime
+                        ? logTime
                             ? 'Log Time'
                             : 'Close'
-                        : // Otherwise the original text
-                        `Create Task ${logTime ? '/ Log Time' : ''}`
+                        : `Create Task ${logTime ? '/ Log Time' : ''}`
                     }
                 </button>
             </div>

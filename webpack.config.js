@@ -1,20 +1,20 @@
 const path = require('path');
 
 module.exports = {
-    mode: 'production', // Set to production mode to enable minification
+    mode: 'development',
     entry: {
         background: './src/background.js',
         contentScript: './src/contentScript.js'
-        // Add other entry points (e.g. popup, options) as needed.
+        // Include others if needed (popup, options, etc.).
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: '[name].js' // This creates dist/background.js and dist/contentScript.js
+        filename: '[name].js'
     },
     module: {
         rules: [
             {
-                test: /\.jsx?$/, // Transpile both .js and .jsx files
+                test: /\.jsx?$/,
                 exclude: /node_modules/,
                 use: {
                     loader: 'babel-loader',
@@ -27,11 +27,10 @@ module.exports = {
                 }
             },
             {
-                test: /\.css$/, // Process CSS files
+                test: /\.css$/,
                 use: ['style-loader', 'css-loader']
             },
             {
-                // Optionally, load image assets if needed
                 test: /\.(png|jpe?g|gif|svg)$/,
                 type: 'asset/resource'
             }
@@ -40,10 +39,8 @@ module.exports = {
     resolve: {
         extensions: ['.js', '.jsx']
     },
-    // Source maps can still be generated in production if desired.
-    // If you don't need them, you can remove or change this setting.
     devtool: 'source-map',
     optimization: {
-        minimize: true // Ensure code minimization is enabled
+        minimize: false
     }
 };
