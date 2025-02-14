@@ -33,7 +33,7 @@ export default function TimeLogModal({
         return d;
     });
     const [comment, setComment] = useState('');
-    const [logTime, setLogTime] = useState(true);
+    const [logTime, setLogTime] = useState(false);
 
     // 2) Store user, projects, and possibly an existing task
     const [user, setUser] = useState(initialUser || null);
@@ -90,6 +90,18 @@ export default function TimeLogModal({
             );
         }
     }, [user, issueKey, issueSummary]);
+
+    useEffect(() => {
+        setLogTime(Boolean(existingTask));
+    }, [existingTask]);
+
+    useEffect(() => {
+        if (startTimeVal) {
+            const updatedEnd = new Date(startTimeVal.getTime());
+            updatedEnd.setHours(updatedEnd.getHours() + 1);
+            setEndTimeVal(updatedEnd);
+        }
+    }, [startTimeVal]);
 
     /**
      * handleCreate: Called when the user presses "Create Task / Log Time"
@@ -264,6 +276,17 @@ export default function TimeLogModal({
                     </Select>
                 </FormControl>
 
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={logTime}
+                            onChange={() => setLogTime((prev) => !prev)}
+                        />
+                    }
+                    label="Log time with task"
+                    style={styles.field}
+                />
+
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <div style={styles.field}>
                         <DatePicker
@@ -273,6 +296,7 @@ export default function TimeLogModal({
                             onChange={(newVal) => newVal && setDateVal(newVal)}
                             renderInput={(params) => <TextField {...params} />}
                             PopperProps={{ style: { zIndex: 9999999 } }}
+                            disabled={!logTime}
                         />
                     </div>
 
@@ -286,6 +310,7 @@ export default function TimeLogModal({
                             ampm={false}
                             minutesStep={15}
                             PopperProps={{ style: { zIndex: 9999999 } }}
+                            disabled={!logTime}
                         />
                     </div>
 
@@ -299,20 +324,12 @@ export default function TimeLogModal({
                             ampm={false}
                             minutesStep={15}
                             PopperProps={{ style: { zIndex: 9999999 } }}
+                            disabled={!logTime}
                         />
                     </div>
                 </LocalizationProvider>
 
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={logTime}
-                            onChange={() => setLogTime((prev) => !prev)}
-                        />
-                    }
-                    label="Log time with task"
-                    style={styles.field}
-                />
+                
 
                 <TextField
                     label="Comment (optional)"

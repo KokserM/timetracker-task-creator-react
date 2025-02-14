@@ -163,7 +163,8 @@ async function findTaskByName(taskName, personId) {
     if (!timetrackerAuthToken) {
         throw new Error('NO_TOKEN');
     }
-    const encodedName = encodeURIComponent(taskName);
+    const issueKey = taskName.split(' - ')[0].trim();
+    const encodedName = encodeURIComponent(issueKey);
     const url = `${TIMETRACKER_BASE_URL}/calendar/tasks/actions/findByName/${encodedName}?selectedPersonId=${personId}`;
     console.log('findTaskByName: GET', url);
 

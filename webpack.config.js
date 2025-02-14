@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
     mode: 'production', // Set to production mode to enable minification
@@ -9,7 +10,8 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: '[name].js' // This creates dist/background.js and dist/contentScript.js
+        filename: '[name].js', // This creates dist/background.js and dist/contentScript.js
+        clean: true
     },
     module: {
         rules: [
@@ -37,6 +39,15 @@ module.exports = {
             }
         ]
     },
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [
+                { from: 'images', to: 'images' },
+                { from: 'icons', to: 'icons' },
+                { from: 'manifest.json', to: 'manifest.json' }
+            ]
+        })
+    ],
     resolve: {
         extensions: ['.js', '.jsx']
     },
