@@ -1,5 +1,5 @@
+// src/MainApp.jsx
 import React from 'react';
-import LoginModal from './components/LoginModal';
 import TimeLogModal from './components/TimeLogModal';
 import { useToast } from './components/Toast';
 

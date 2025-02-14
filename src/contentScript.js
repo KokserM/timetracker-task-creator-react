@@ -1,4 +1,8 @@
 // src/contentScript.js
+if (window.matchMedia) {
+    window.matchMedia = window.matchMedia.bind(window);
+}
+
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
@@ -7,6 +11,7 @@ const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
 
 (function() {
     console.log('Timetracker React contentScript loaded');
+    
 
     const issueKeyElement = document.querySelector('#key-val');
     const issueSummaryElement = document.querySelector('#summary-val');

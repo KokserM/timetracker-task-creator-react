@@ -1,3 +1,4 @@
+// src/components/TimeLogModal.jsx
 import React, { useEffect, useState } from 'react';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
@@ -10,9 +11,8 @@ import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import { format } from 'date-fns';
 
-// if (typeof browser === 'undefined') {
-//   var browser = chrome;
-// }
+// Use extBrowser so that in Firefox we get `browser`, and in Chrome we fall back to `chrome`
+const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
 
 export default function TimeLogModal({
                                          onClose,
@@ -23,6 +23,7 @@ export default function TimeLogModal({
                                          onSuccess,
                                          showToast,
                                      }) {
+    // Basic date/time states
     const [dateVal, setDateVal] = useState(new Date());
     const [startTimeVal, setStartTimeVal] = useState(() => {
         const d = new Date();
@@ -37,15 +38,16 @@ export default function TimeLogModal({
     const [comment, setComment] = useState('');
     const [logTime, setLogTime] = useState(true);
 
+    // User, projects, and possible existing task
     const [user, setUser] = useState(initialUser || null);
     const [projects, setProjects] = useState(initialProjects || []);
     const [selectedProjectId, setSelectedProjectId] = useState('');
     const [existingTask, setExistingTask] = useState(null);
 
-    // Step 1: fetch user/projects if missing
+    // Fetch user and projects if not provided
     useEffect(() => {
         if (!user || projects.length === 0) {
-            browser.runtime.sendMessage({ action: 'GET_PROJECTS_AND_USER' }, (resp) => {
+            extBrowser.runtime.sendMessage({ action: 'GET_PROJECTS_AND_USER' }, (resp) => {
                 if (resp && resp.success) {
                     setUser(resp.user);
                     setProjects(resp.projects);
@@ -58,11 +60,11 @@ export default function TimeLogModal({
         }
     }, []);
 
-    // Step 2: check if task already exists
+    // Check if the task already exists for this issue
     useEffect(() => {
         if (user && issueKey && issueSummary) {
             const taskName = `${issueKey} - ${issueSummary}`;
-            browser.runtime.sendMessage(
+            extBrowser.runtime.sendMessage(
                 {
                     action: 'FIND_TASK_BY_NAME',
                     payload: { taskName, personId: user.id },
@@ -73,8 +75,9 @@ export default function TimeLogModal({
                         return;
                     }
                     if (resp.success && resp.data && resp.data.length > 0) {
-                        const found = resp.data[0];
+                        const found = resp.data[0]; // Found existing task
                         setExistingTask(found);
+                        // Also set the project selection based on the found task
                         if (found.project?.id) {
                             setSelectedProjectId(found.project.id);
                         }
@@ -84,6 +87,7 @@ export default function TimeLogModal({
         }
     }, [user, issueKey, issueSummary]);
 
+    // Called when the user clicks "Create Task / Log Time"
     function handleCreate() {
         let startVal = '';
         let endVal = '';
@@ -99,12 +103,12 @@ export default function TimeLogModal({
                 showToast('Start time must be before end time.', 'error');
                 return;
             }
-            // Local time strings e.g. 2025-02-11T09:00:00
+            // Format as local time strings (e.g., "2025-02-11T09:00:00")
             startVal = format(startDateObj, "yyyy-MM-dd'T'HH:mm:ss");
             endVal = format(endDateObj, "yyyy-MM-dd'T'HH:mm:ss");
         }
 
-        // If existing task found, skip creation
+        // If task already exists, log time or simply close
         if (existingTask) {
             if (logTime) {
                 doCreateWorklog(existingTask, startVal, endVal);
@@ -115,6 +119,7 @@ export default function TimeLogModal({
             return;
         }
 
+        // Validate project and user existence before creating task
         if (!selectedProjectId) {
             showToast('Please select a project.', 'error');
             return;
@@ -131,7 +136,7 @@ export default function TimeLogModal({
         }
 
         const taskName = `${issueKey} - ${issueSummary}`;
-        browser.runtime.sendMessage(
+        extBrowser.runtime.sendMessage(
             {
                 action: 'CREATE_TIMETRACKER_TASK',
                 payload: { issueKey, issueSummary, project: finalProject },
@@ -148,8 +153,8 @@ export default function TimeLogModal({
                 showToast('Task created successfully!', 'success');
 
                 if (logTime) {
-                    // after creation, fetch the newly created full task object
-                    browser.runtime.sendMessage(
+                    // After creation, retrieve the new task to log time
+                    extBrowser.runtime.sendMessage(
                         {
                             action: 'FIND_TASK_BY_NAME',
                             payload: { taskName, personId: user.id },
@@ -173,8 +178,9 @@ export default function TimeLogModal({
         );
     }
 
+    // Logs the worklog for the given task
     function doCreateWorklog(taskObj, startValLocal, endValLocal) {
-        browser.runtime.sendMessage(
+        extBrowser.runtime.sendMessage(
             {
                 action: 'CREATE_WORKLOG',
                 payload: {
@@ -224,17 +230,9 @@ export default function TimeLogModal({
                         disabled={Boolean(existingTask)}
                         MenuProps={{
                             disablePortal: true,
-                            PaperProps: {
-                                style: { zIndex: 9999999 },
-                            },
-                            anchorOrigin: {
-                                vertical: 'bottom',
-                                horizontal: 'left',
-                            },
-                            transformOrigin: {
-                                vertical: 'top',
-                                horizontal: 'left',
-                            },
+                            PaperProps: { style: { zIndex: 9999999 } },
+                            anchorOrigin: { vertical: 'bottom', horizontal: 'left' },
+                            transformOrigin: { vertical: 'top', horizontal: 'left' },
                         }}
                     >
                         <MenuItem value="">
@@ -257,6 +255,7 @@ export default function TimeLogModal({
                             onChange={(newVal) => newVal && setDateVal(newVal)}
                             renderInput={(params) => <TextField {...params} />}
                             PopperProps={{ style: { zIndex: 9999999 } }}
+                            disabled={!logTime}
                         />
                     </div>
 
@@ -270,6 +269,7 @@ export default function TimeLogModal({
                             ampm={false}
                             minutesStep={15}
                             PopperProps={{ style: { zIndex: 9999999 } }}
+                            disabled={!logTime}
                         />
                     </div>
 
@@ -283,6 +283,7 @@ export default function TimeLogModal({
                             ampm={false}
                             minutesStep={15}
                             PopperProps={{ style: { zIndex: 9999999 } }}
+                            disabled={!logTime}
                         />
                     </div>
                 </LocalizationProvider>
@@ -315,8 +316,7 @@ export default function TimeLogModal({
                         ? logTime
                             ? 'Log Time'
                             : 'Close'
-                        : `Create Task ${logTime ? '/ Log Time' : ''}`
-                    }
+                        : `Create Task ${logTime ? '/ Log Time' : ''}`}
                 </button>
             </div>
         </div>

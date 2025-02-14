@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import MainApp from './MainApp';
 import ToastProvider from './components/Toast';
 import LoginModal from './components/LoginModal';
+import CssBaseline from '@mui/material/CssBaseline';
 
+// Use extBrowser to support both Firefox and Chrome.
 const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
 
 function App(props) {
@@ -41,6 +43,8 @@ function App(props) {
 
     return (
         <ToastProvider>
+            {/* CssBaseline ensures Material-UI components have proper styling */}
+            <CssBaseline />
             <MainApp
                 {...props}
                 showTimeLog={showTimeLog}
