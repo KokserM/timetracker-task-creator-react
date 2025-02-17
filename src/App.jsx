@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import MainApp from './MainApp';
-import ToastProvider from './components/Toast';
+//import ToastProvider from './components/Toast';
+import { Toaster } from 'react-hot-toast';
 import LoginModal from './components/LoginModal';
 
 function App(props) {
@@ -37,7 +38,7 @@ function App(props) {
     }
 
     return (
-        <ToastProvider>
+        <>
             <MainApp
                 {...props}
                 showTimeLog={showTimeLog}
@@ -51,7 +52,13 @@ function App(props) {
                     onLoginSuccess={handleLoginSuccess}
                 />
             )}
-        </ToastProvider>
+            <Toaster
+                position="top-right"
+                containerStyle={{
+                    zIndex: 1000000
+                }}
+            />
+        </>
     );
 }
 

@@ -17,6 +17,9 @@ async function loginToTimetracker(username, password) {
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Invalid username or password');
+        }
         const errorText = await response.text();
         console.error('loginToTimetracker error:', errorText);
         throw new Error(`Login failed: ${errorText}`);
@@ -267,7 +270,19 @@ async function createWorklog(taskFromContent, startTime, endTime, comment, userF
     if (!response.ok) {
         const errorText = await response.text();
         console.error('createWorklog: error text:', errorText);
-        throw new Error(errorText);
+        try {
+            const errorResponse = JSON.parse(errorText);
+            if (Array.isArray(errorResponse) && errorResponse[0]?.message?.code) {
+                const errorCode = errorResponse[0].message.code;
+                if (errorCode === 'worklogConcurrentWorklogs') {
+                    return Promise.reject(new Error('Worklog already exists for the specified time period.'));
+                }
+            }
+            return Promise.reject(new Error('Unknown error format received.'));
+        } catch (e) {
+            console.error('createWorklog: Failed to parse error response:', e);
+            return Promise.reject(new Error('Failed to parse error response'));
+        }
     }
 
     const responseText = await response.text();
