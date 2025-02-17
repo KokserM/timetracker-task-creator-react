@@ -36,7 +36,7 @@ export default function TimeLogModal({
         return d;
     });
     const [comment, setComment] = useState('');
-    const [logTime, setLogTime] = useState(true);
+    const [logTime, setLogTime] = useState(false);
 
     // User, projects, and possible existing task
     const [user, setUser] = useState(initialUser || null);
@@ -87,7 +87,21 @@ export default function TimeLogModal({
         }
     }, [user, issueKey, issueSummary]);
 
-    // Called when the user clicks "Create Task / Log Time"
+    useEffect(() => {
+        setLogTime(Boolean(existingTask));
+    }, [existingTask]);
+
+    useEffect(() => {
+        if (startTimeVal) {
+            const updatedEnd = new Date(startTimeVal.getTime());
+            updatedEnd.setHours(updatedEnd.getHours() + 1);
+            setEndTimeVal(updatedEnd);
+        }
+    }, [startTimeVal]);
+
+    /**
+     * handleCreate: Called when the user presses "Create Task / Log Time"
+     */
     function handleCreate() {
         let startVal = '';
         let endVal = '';
@@ -246,6 +260,17 @@ export default function TimeLogModal({
                     </Select>
                 </FormControl>
 
+                <FormControlLabel
+                    control={
+                        <Checkbox
+                            checked={logTime}
+                            onChange={() => setLogTime((prev) => !prev)}
+                        />
+                    }
+                    label="Log time with task"
+                    style={styles.field}
+                />
+
                 <LocalizationProvider dateAdapter={AdapterDateFns}>
                     <div style={styles.field}>
                         <DatePicker
@@ -288,16 +313,7 @@ export default function TimeLogModal({
                     </div>
                 </LocalizationProvider>
 
-                <FormControlLabel
-                    control={
-                        <Checkbox
-                            checked={logTime}
-                            onChange={() => setLogTime((prev) => !prev)}
-                        />
-                    }
-                    label="Log time with task"
-                    style={styles.field}
-                />
+                
 
                 <TextField
                     label="Comment (optional)"
