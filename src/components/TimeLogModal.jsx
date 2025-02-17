@@ -295,7 +295,9 @@ export default function TimeLogModal({
                             value={dateVal}
                             onChange={(newVal) => newVal && setDateVal(newVal)}
                             renderInput={(params) => <TextField {...params} />}
-                            PopperProps={{ style: { zIndex: 9999999 } }}
+                            slotProps={{  popper: {
+                                    disablePortal: true,
+                                }, }}
                             disabled={!logTime}
                         />
                     </div>
@@ -309,7 +311,9 @@ export default function TimeLogModal({
                             renderInput={(params) => <TextField {...params} />}
                             ampm={false}
                             minutesStep={15}
-                            PopperProps={{ style: { zIndex: 9999999 } }}
+                            slotProps={{  popper: {
+                                disablePortal: true,
+                                }, }}
                             disabled={!logTime}
                         />
                     </div>
@@ -323,7 +327,9 @@ export default function TimeLogModal({
                             renderInput={(params) => <TextField {...params} />}
                             ampm={false}
                             minutesStep={15}
-                            PopperProps={{ style: { zIndex: 9999999 } }}
+                            slotProps={{  popper: {
+                                    disablePortal: true,
+                                }, }}
                             disabled={!logTime}
                         />
                     </div>
@@ -366,7 +372,7 @@ const styles = {
         width: '100%',
         height: '100%',
         backgroundColor: 'rgba(0,0,0,0.5)',
-        zIndex: 999999,
+        zIndex: 999997,
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
