@@ -5,8 +5,8 @@ module.exports = {
     mode: 'development',
     entry: {
         background: './src/background.js',
-        contentScript: './src/contentScript.js'
-        // Include others if needed (popup, options, etc.).
+        contentScript: './src/contentScript.js',
+        options: './src/options/index.jsx'
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -43,7 +43,8 @@ module.exports = {
             patterns: [
                 { from: 'images', to: 'images' },
                 { from: 'icons', to: 'icons' },
-                { from: 'manifest.json', to: 'manifest.json' }
+                { from: 'manifest.json', to: 'manifest.json' },
+                { from: 'public', to: '.' }
             ]
         })
     ],

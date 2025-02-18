@@ -9,6 +9,7 @@ import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import { toast } from 'react-hot-toast';
 import { format } from 'date-fns';
 
 // Use extBrowser so that in Firefox we get `browser`, and in Chrome we fall back to `chrome`
@@ -21,7 +22,6 @@ export default function TimeLogModal({
                                          issueKey,
                                          issueSummary,
                                          onSuccess,
-                                         showToast,
                                      }) {
     // Basic date/time states
     const [dateVal, setDateVal] = useState(new Date());
@@ -52,9 +52,9 @@ export default function TimeLogModal({
                     setUser(resp.user);
                     setProjects(resp.projects);
                 } else if (resp && resp.needCredentials) {
-                    showToast('Need credentials, please log in first.', 'error');
+                    toast.error('Need credentials, please log in first.');
                 } else {
-                    showToast(`Error fetching: ${resp?.error}`, 'error');
+                    toast.error('Error fetching projects and user.');
                 }
             });
         }
@@ -114,7 +114,7 @@ export default function TimeLogModal({
             endDateObj.setHours(endTimeVal.getHours(), endTimeVal.getMinutes(), 0, 0);
 
             if (startDateObj >= endDateObj) {
-                showToast('Start time must be before end time.', 'error');
+                toast.error('Start time must be before end time.');
                 return;
             }
             // Format as local time strings (e.g., "2025-02-11T09:00:00")
@@ -127,7 +127,6 @@ export default function TimeLogModal({
             if (logTime) {
                 doCreateWorklog(existingTask, startVal, endVal);
             } else {
-                showToast('Task already exists; no time logged.', 'info');
                 onSuccess('Task exists (no time logged)');
             }
             return;
@@ -135,17 +134,17 @@ export default function TimeLogModal({
 
         // Validate project and user existence before creating task
         if (!selectedProjectId) {
-            showToast('Please select a project.', 'error');
+            toast.error('Please select a project.');
             return;
         }
         if (!user) {
-            showToast('No user found. Please log in first.', 'error');
+            toast.error('No user found. Please log in first.');
             return;
         }
 
         const finalProject = projects.find((p) => p.id === selectedProjectId);
         if (!finalProject) {
-            showToast('Selected project not found.', 'error');
+            toast.error('Selected project not found.');
             return;
         }
 
@@ -157,14 +156,14 @@ export default function TimeLogModal({
             },
             (createResp) => {
                 if (!createResp) {
-                    showToast('No response while creating task.', 'error');
+                    toast.error('No response while creating task.');
                     return;
                 }
                 if (!createResp.success) {
-                    showToast(`Error creating task: ${createResp.error}`, 'error');
+                    toast.error(`Error creating task: ${createResp.error}`);
                     return;
                 }
-                showToast('Task created successfully!', 'success');
+                toast.success('Task created successfully!');
 
                 if (logTime) {
                     // After creation, retrieve the new task to log time
@@ -175,11 +174,11 @@ export default function TimeLogModal({
                         },
                         (secondFind) => {
                             if (!secondFind) {
-                                showToast('No response after task creation.', 'error');
+                                toast.error('No response after task creation.');
                                 return;
                             }
                             if (!secondFind.success || !secondFind.data || secondFind.data.length === 0) {
-                                showToast('Newly created task not found.', 'error');
+                                toast.error('Newly created task not found.');
                                 return;
                             }
                             doCreateWorklog(secondFind.data[0], startVal, endVal);
@@ -207,14 +206,14 @@ export default function TimeLogModal({
             },
             (wlResp) => {
                 if (!wlResp) {
-                    showToast('No response while logging time.', 'error');
+                    toast.error('No response while logging time.');
                     return;
                 }
                 if (wlResp.success) {
-                    showToast('Time logged successfully!', 'success');
+                    toast.success('Time logged successfully!');
                     onSuccess();
                 } else {
-                    showToast(`Error: ${wlResp.error}`, 'error');
+                    toast.error('Error logging time: ' + wlResp.error);
                 }
             }
         );
@@ -278,8 +277,10 @@ export default function TimeLogModal({
                             disablePortal
                             value={dateVal}
                             onChange={(newVal) => newVal && setDateVal(newVal)}
-                            renderInput={(params) => <TextField {...params} />}
-                            PopperProps={{ style: { zIndex: 9999999 } }}
+                            slots={{ textField: TextField }}
+                            slotProps={{  popper: {
+                                    disablePortal: true,
+                                }, }}
                             disabled={!logTime}
                         />
                     </div>
@@ -290,10 +291,12 @@ export default function TimeLogModal({
                             disablePortal
                             value={startTimeVal}
                             onChange={(newTime) => newTime && setStartTimeVal(newTime)}
-                            renderInput={(params) => <TextField {...params} />}
+                            slots={{ textField: TextField }}
                             ampm={false}
                             minutesStep={15}
-                            PopperProps={{ style: { zIndex: 9999999 } }}
+                            slotProps={{  popper: {
+                                disablePortal: true,
+                                }, }}
                             disabled={!logTime}
                         />
                     </div>
@@ -304,10 +307,12 @@ export default function TimeLogModal({
                             disablePortal
                             value={endTimeVal}
                             onChange={(newTime) => newTime && setEndTimeVal(newTime)}
-                            renderInput={(params) => <TextField {...params} />}
+                            slots={{ textField: TextField }}
                             ampm={false}
                             minutesStep={15}
-                            PopperProps={{ style: { zIndex: 9999999 } }}
+                            slotProps={{  popper: {
+                                    disablePortal: true,
+                                }, }}
                             disabled={!logTime}
                         />
                     </div>

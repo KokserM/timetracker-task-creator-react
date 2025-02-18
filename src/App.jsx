@@ -1,7 +1,7 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import MainApp from './MainApp';
-import ToastProvider from './components/Toast';
+//import ToastProvider from './components/Toast';
+import { Toaster } from 'react-hot-toast';
 import LoginModal from './components/LoginModal';
 import CssBaseline from '@mui/material/CssBaseline';
 
@@ -42,9 +42,7 @@ function App(props) {
     }
 
     return (
-        <ToastProvider>
-            {/* CssBaseline ensures Material-UI components have proper styling */}
-            <CssBaseline />
+        <>
             <MainApp
                 {...props}
                 showTimeLog={showTimeLog}
@@ -58,7 +56,13 @@ function App(props) {
                     onLoginSuccess={handleLoginSuccess}
                 />
             )}
-        </ToastProvider>
+            <Toaster
+                position="top-right"
+                containerStyle={{
+                    zIndex: 1000000
+                }}
+            />
+        </>
     );
 }
 

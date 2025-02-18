@@ -1,7 +1,7 @@
-// src/components/LoginModal.jsx
 import React, { useState } from 'react';
-import { TextField, Button, IconButton } from '@mui/material';
+import { TextField, Button, IconButton, Typography } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
+import { toast } from 'react-hot-toast';
 
 const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
 
@@ -9,9 +9,12 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
-    function handleSubmit() {
-        if (!username || !password) return;
-
+    function handleSubmit(e) {
+        if (e) e.preventDefault();
+        if (!username || !password) {
+            toast.error('Please enter both username and password');
+            return;
+        }
         extBrowser.runtime.sendMessage(
             { action: 'LOGIN', payload: { username, password } },
             (resp) => {
@@ -22,15 +25,15 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                 if (resp.success) {
                     onLoginSuccess(resp.user, resp.projects);
                 } else {
-                    alert(`Login failed: ${resp.error || 'Unknown error'}`);
-                }
+                    toast.error(resp.error || 'Login failed. Please check your credentials.');
+                } 
             }
         );
     }
 
     return (
         <div style={styles.overlay}>
-            <div style={styles.modal}>
+            <form style={styles.modal} onSubmit={handleSubmit}>
                 <IconButton sx={styles.closeBtn} onClick={onClose} size="small">
                     <CloseIcon />
                 </IconButton>
@@ -50,6 +53,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     sx={{ marginBottom: '16px' }}
+                    autoFocus
                 />
 
                 <TextField
@@ -64,7 +68,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
 
                 <Button
                     variant="contained"
-                    onClick={handleSubmit}
+                    type="submit"
                     sx={{
                         backgroundColor: '#355fac',
                         ':hover': { backgroundColor: '#2d4f8a' }
@@ -72,7 +76,7 @@ export default function LoginModal({ onClose, onLoginSuccess }) {
                 >
                     Login
                 </Button>
-            </div>
+            </form>
         </div>
     );
 }

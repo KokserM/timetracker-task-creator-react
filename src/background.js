@@ -16,10 +16,30 @@ function getErrorMessage(err) {
     return String(err);
 }
 
-/**
- * Logs in with the provided username and password.
- * Always throws an Error object on failure.
- */
+
+async function tryAutoLogin() {
+    try {
+        // Check if we already have a valid token
+        const tokenData = await extBrowser.storage.local.get('timetrackerAuthToken');
+        if (tokenData.timetrackerAuthToken) {
+            return true;
+        }
+
+        // Get stored credentials
+        const creds = await extBrowser.storage.sync.get(['timetrackerUsername', 'timetrackerPassword']);
+        if (!creds.timetrackerUsername || !creds.timetrackerPassword) {
+            return false;
+        }
+
+        // Try to login
+        const token = await loginToTimetracker(creds.timetrackerUsername, creds.timetrackerPassword);
+        return Boolean(token);
+    } catch (err) {
+        console.error('Auto-login failed:', err);
+        return false;
+    }
+}
+
 async function loginToTimetracker(username, password) {
     console.log('loginToTimetracker: Attempting login for', username);
     const response = await fetch(TIMETRACKER_LOGIN_URL, {
@@ -29,6 +49,9 @@ async function loginToTimetracker(username, password) {
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            throw new Error('Invalid username or password');
+        }
         const errorText = await response.text();
         console.error('loginToTimetracker error:', errorText);
         throw new Error(`Login failed: ${errorText}`);
@@ -286,7 +309,19 @@ async function createWorklog(taskFromContent, startTime, endTime, comment, userF
     if (!response.ok) {
         const errorText = await response.text();
         console.error('createWorklog: error text:', errorText);
-        throw new Error(errorText);
+        try {
+            const errorResponse = JSON.parse(errorText);
+            if (Array.isArray(errorResponse) && errorResponse[0]?.message?.code) {
+                const errorCode = errorResponse[0].message.code;
+                if (errorCode === 'worklogConcurrentWorklogs') {
+                    return Promise.reject(new Error('Worklog already exists for the specified time period.'));
+                }
+            }
+            return Promise.reject(new Error('Unknown error format received.'));
+        } catch (e) {
+            console.error('createWorklog: Failed to parse error response:', e);
+            return Promise.reject(new Error('Failed to parse error response'));
+        }
     }
 
     const responseText = await response.text();
@@ -305,18 +340,23 @@ extBrowser.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('background.js - onMessage:', request);
 
     if (request.action === 'GET_PROJECTS_AND_USER') {
-        getProjects()
+        tryAutoLogin()
+            .then(success => {
+                if (success) {
+                    return getProjects();
+                } else {
+                    throw new Error('NO_TOKEN');
+                }
+            })
             .then(({ user, projects }) => {
                 sendResponse({ success: true, user, projects });
-                console.log('GET_PROJECTS_AND_USER success:', user, projects);
             })
-            .catch((err) => {
-                console.error('GET_PROJECTS_AND_USER error:', err);
-                const msg = getErrorMessage(err);
-                if (msg === 'NO_TOKEN' || msg === 'TOKEN_INVALID') {
+            .catch(err => {
+                console.error('GET_PROJECTS_AND_USER error:', err.message);
+                if (err.message === 'NO_TOKEN' || err.message === 'TOKEN_INVALID') {
                     sendResponse({ success: false, needCredentials: true });
                 } else {
-                    sendResponse({ success: false, error: msg });
+                    sendResponse({ success: false, error: err.message });
                 }
             });
         return true;
