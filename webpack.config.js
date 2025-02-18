@@ -5,7 +5,8 @@ module.exports = {
     mode: 'production', 
     entry: {
         background: './src/background.js',
-        contentScript: './src/contentScript.js'
+        contentScript: './src/contentScript.js',
+        options: './src/options/index.jsx'
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
@@ -42,7 +43,8 @@ module.exports = {
             patterns: [
                 { from: 'images', to: 'images' },
                 { from: 'icons', to: 'icons' },
-                { from: 'manifest.json', to: 'manifest.json' }
+                { from: 'manifest.json', to: 'manifest.json' },
+                { from: 'public', to: '.' }
             ]
         })
     ],

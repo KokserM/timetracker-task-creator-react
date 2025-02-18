@@ -8,6 +8,30 @@ const TIMETRACKER_TASKS_URL = `${TIMETRACKER_BASE_URL}/tasks`;
  * Logs in with given username/password – returns x-auth-token
  * and stores it in chrome.storage.local.
  */
+
+async function tryAutoLogin() {
+    try {
+        // Check if we already have a valid token
+        const tokenData = await chrome.storage.local.get('timetrackerAuthToken');
+        if (tokenData.timetrackerAuthToken) {
+            return true;
+        }
+
+        // Get stored credentials
+        const creds = await chrome.storage.sync.get(['timetrackerUsername', 'timetrackerPassword']);
+        if (!creds.timetrackerUsername || !creds.timetrackerPassword) {
+            return false;
+        }
+
+        // Try to login
+        const token = await loginToTimetracker(creds.timetrackerUsername, creds.timetrackerPassword);
+        return Boolean(token);
+    } catch (err) {
+        console.error('Auto-login failed:', err);
+        return false;
+    }
+}
+
 async function loginToTimetracker(username, password) {
     console.log('loginToTimetracker: Attempting login for', username);
     const response = await fetch(TIMETRACKER_LOGIN_URL, {
@@ -304,10 +328,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log('background.js - onMessage:', request);
 
     if (request.action === 'GET_PROJECTS_AND_USER') {
-        getProjects()
+        tryAutoLogin()
+            .then(success => {
+                if (success) {
+                    return getProjects();
+                } else {
+                    throw new Error('NO_TOKEN');
+                }
+            })
             .then(({ user, projects }) => {
                 sendResponse({ success: true, user, projects });
-                console.log('GET_PROJECTS_AND_USER success:', user, projects);
             })
             .catch(err => {
                 console.error('GET_PROJECTS_AND_USER error:', err.message);

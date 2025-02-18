@@ -3,6 +3,7 @@
   "description": "Create Timetracker tasks from Jira with a React-based UI, preserving your logic.",
   "version": "1.0.0",
   "manifest_version": 3,
+  "options_page": "options.html",
   "web_accessible_resources": [
     {
       "resources": [
