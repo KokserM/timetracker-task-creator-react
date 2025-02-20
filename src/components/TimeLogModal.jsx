@@ -102,16 +102,11 @@ export default function TimeLogModal({
             setEndTimeVal(updatedEnd);
         }
     }, [startTimeVal]);
-
-    /**
-     * handleCreate: Called when the user presses "Create Task / Log Time"
-     */
+    
     function handleCreate() {
-        // 3) Build start/end times as local time strings
         let startVal = '';
         let endVal = '';
 
-        // Validate times only if logging time
         if (logTime) {
             const startDateObj = new Date(dateVal);
             startDateObj.setHours(startTimeVal.getHours(), startTimeVal.getMinutes(), 0, 0);
@@ -172,7 +167,6 @@ export default function TimeLogModal({
                 toast.success('Task created successfully!');
 
                 if (logTime) {
-                    // After creation, we fetch the newly-created full task object so we can log time
                     chrome.runtime.sendMessage(
                         {
                             action: 'FIND_TASK_BY_NAME',
@@ -191,15 +185,12 @@ export default function TimeLogModal({
                         }
                     );
                 } else {
-                    onSuccess('Task created');
+                    onSuccess();
                 }
             }
         );
     }
 
-    /**
-     * Actually logs the time for the given task.
-     */
     function doCreateWorklog(taskObj, startValLocal, endValLocal) {
         chrome.runtime.sendMessage(
             {
@@ -248,7 +239,7 @@ export default function TimeLogModal({
                         value={selectedProjectId}
                         onChange={(evt) => setSelectedProjectId(evt.target.value)}
                         label="Project"
-                        disabled={Boolean(existingTask)} // Disable if a task already exists
+                        disabled={Boolean(existingTask)}
                         MenuProps={{
                             disablePortal: true,
                             PaperProps: {
@@ -349,13 +340,7 @@ export default function TimeLogModal({
                 />
 
                 <button style={styles.createBtn} onClick={handleCreate}>
-                    {existingTask
-                        ? // If task already exists, button says "Log Time" or "No Time" depending on checkbox
-                        logTime
-                            ? 'Log Time'
-                            : 'Close'
-                        : // Otherwise the original text
-                        `Create Task ${logTime ? '/ Log Time' : ''}`
+                    {existingTask ? logTime ? 'Log Time' : 'Close' : `Create Task ${logTime ? '/ Log Time' : ''}`
                     }
                 </button>
             </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import MainApp from './MainApp';
-//import ToastProvider from './components/Toast';
 import { Toaster } from 'react-hot-toast';
 import LoginModal from './components/LoginModal';
 

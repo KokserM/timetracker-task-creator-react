@@ -4,7 +4,6 @@ import CloseIcon from '@mui/icons-material/Close';
 import { toast } from 'react-hot-toast';
 
 export default function LoginModal({ onClose, onLoginSuccess }) {
-    // TODO: auto-login when user and password are set in options
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
