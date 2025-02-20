@@ -1,0 +1,39 @@
+{
+  "name": "Timetracker React Extension",
+  "description": "Create Timetracker tasks from Jira with a React-based UI, preserving your logic.",
+  "version": "1.0.0",
+  "manifest_version": 3,
+  "options_page": "options.html",
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "images/timetrackerlogo.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://timetracker.iglu.ee/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://smjira.sm.ee/browse/*",
+        "https://jira.atlassian.teliacompany.net/browse/*"],
+      "js": ["contentScript.js"]
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
