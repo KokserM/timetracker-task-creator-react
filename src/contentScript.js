@@ -1,17 +1,47 @@
 // src/contentScript.js
+import React, { useEffect, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
+
 if (window.matchMedia) {
     window.matchMedia = window.matchMedia.bind(window);
 }
 
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
+function TimetrackerButton() {
+    const [hovered, setHovered] = useState(false);
 
-const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
+    const buttonStyle = {
+        backgroundColor: hovered ? '#244b91' : '#355fac',
+        color: 'white',
+        marginLeft: '8px',
+        transition: 'background 0.3s ease',
+        textDecoration: 'none',
+    };
+
+    return (
+        <a
+            id="create-timetracker-task"
+            className="aui-button toolbar-trigger issueaction-create-timetracker-task"
+            href="#"
+            style={buttonStyle}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            onClick={(e) => {
+                e.preventDefault();
+                if (window.showTimetrackerModal) {
+                    window.showTimetrackerModal();
+                } else {
+                    console.error('showTimetrackerModal is not defined.');
+                }
+            }}
+        >
+            Create Timetracker Task
+        </a>
+    );
+}
 
 (function() {
     console.log('Timetracker React contentScript loaded');
-    
 
     const issueKeyElement = document.querySelector('#key-val');
     const issueSummaryElement = document.querySelector('#summary-val');
@@ -27,36 +57,22 @@ const extBrowser = (typeof browser !== 'undefined') ? browser : chrome;
         console.log('#opsbar-opsbar-transitions not found.');
         return;
     }
-    const createTaskButton = document.createElement('a');
-    createTaskButton.id = 'create-timetracker-task';
-    createTaskButton.className = 'aui-button toolbar-trigger issueaction-create-timetracker-task';
-    createTaskButton.style.backgroundColor = '#355fac';
-    createTaskButton.style.color = 'white';
-    createTaskButton.href = '#';
-    createTaskButton.style.marginLeft = '8px';
-    createTaskButton.textContent = 'Create Timetracker Task';
-    createTaskButton.style.transition = 'background 0.3s ease';
-    createTaskButton.addEventListener('mouseover', () => {
-        createTaskButton.style.backgroundColor = '#244b91';
-    });
-    createTaskButton.addEventListener('mouseout', () => {
-        createTaskButton.style.backgroundColor = '#355fac';
-    });
-    opsbarTransitions.appendChild(createTaskButton);
 
+    // Create container for the button
+    const buttonContainer = document.createElement('div');
+    buttonContainer.style.display = 'inline-block';
+    opsbarTransitions.appendChild(buttonContainer);
+
+    // Create container for the modal
     const modalContainer = document.createElement('div');
     modalContainer.id = 'timetracker-react-modal-root';
     document.body.appendChild(modalContainer);
 
-    const root = createRoot(modalContainer);
-    root.render(<App issueKey={issueKey} issueSummary={issueSummary} />);
+    // Render button
+    const buttonRoot = createRoot(buttonContainer);
+    buttonRoot.render(<TimetrackerButton />);
 
-    createTaskButton.addEventListener('click', (e) => {
-        e.preventDefault();
-        if (window.showTimetrackerModal) {
-            window.showTimetrackerModal();
-        } else {
-            console.error('showTimetrackerModal is not defined.');
-        }
-    });
+    // Render App (modal)
+    const modalRoot = createRoot(modalContainer);
+    modalRoot.render(<App issueKey={issueKey} issueSummary={issueSummary} />);
 })();

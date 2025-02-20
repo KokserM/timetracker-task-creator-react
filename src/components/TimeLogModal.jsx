@@ -1,4 +1,3 @@
-// src/components/TimeLogModal.jsx
 import React, { useEffect, useState } from 'react';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { LocalizationProvider, DatePicker, TimePicker } from '@mui/x-date-pickers';
@@ -185,7 +184,7 @@ export default function TimeLogModal({
                         }
                     );
                 } else {
-                    onSuccess('Task created');
+                    onSuccess();
                 }
             }
         );

@@ -28,12 +28,33 @@ export default function Options() {
             return;
         }
 
-        // Save credentials
-        extBrowser.storage.sync.set({
-            timetrackerUsername: credentials.username,
-            timetrackerPassword: credentials.password
-        }, () => {
-            toast.success('Credentials saved');
+        extBrowser.runtime.sendMessage(
+            { action: 'LOGIN', payload: { username: credentials.username, password: credentials.password } },
+            (resp) => {
+                if (!resp) {
+                    toast.error('No response from login attempt');
+                    return;
+                }
+                if (resp.success) {
+                    // Save credentials if login is successful
+                    extBrowser.storage.sync.set({
+                        timetrackerUsername: credentials.username,
+                        timetrackerPassword: credentials.password
+                    }, () => {
+                        toast.success('Credentials saved and verified');
+                    });
+                } else {
+                    toast.error(resp.error || 'Login failed. Please check your credentials.');
+                }
+            }
+        );
+    };
+
+    const handleReset = () => {
+        // Clear credentials
+        extBrowser.storage.sync.remove(['timetrackerUsername', 'timetrackerPassword'], () => {
+            setCredentials({ username: '', password: '' });
+            toast.success('Credentials reset');
         });
     };
 
@@ -72,6 +93,13 @@ export default function Options() {
                 sx={{ mt: 2 }}
             >
                 Save
+            </Button>
+            <Button
+                variant="outlined"
+                onClick={handleReset}
+                sx={{ mt: 2, ml: 2 }}
+            >
+                Reset
             </Button>
             <Toaster
                 position="top-right"

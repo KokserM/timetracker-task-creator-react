@@ -2,10 +2,8 @@ import React from 'react';
 import { toast } from 'react-hot-toast';
 import LoginModal from './components/LoginModal';
 import TimeLogModal from './components/TimeLogModal';
-//import { useToast } from './components/Toast';
 
 function MainApp({ issueKey, issueSummary, showTimeLog, setShowTimeLog, cachedUser, cachedProjects }) {
-    //const { addToast } = useToast();
 
     function handleTaskSuccess(message) {
         if (message) {
@@ -13,6 +11,7 @@ function MainApp({ issueKey, issueSummary, showTimeLog, setShowTimeLog, cachedUs
         }
         setShowTimeLog(false);
     }
+
 
     return (
         <>
